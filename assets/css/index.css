@@ -1,0 +1,17 @@
+/* H5BP styles. */
+@import "../vendor/h5bp/css/style.css";
+
+/* Add Stylus stylesheets here, alll files ending in .styl will be compiled!
+ * For example: @import "main.styl";
+ *
+ * Note: All stylesheets are relative to `assets/css`.
+ *
+ */ 
+
+/*@import "stylus!main.styl";*/
+
+/* Put development-only CSS below this line. */
+
+.ui-draggable {}
+.ui-draggable-dragging {}
+.ui-state-active { border: 1px solid red; }

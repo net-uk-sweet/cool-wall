@@ -1,0 +1,16 @@
+{
+  "name": "cool-wall",
+  "description": "Interactive, two-dimensional version of Top Gear's Cool Wall",
+  "version": "0.0.0",
+  "homepage": "https://github.com/net-uk-sweet/cool-wall",
+  "author": {
+    "name": "Ian Watson",
+    "email": "ian@sweet.uk.net",
+    "url": "ian.sweet.uk.net"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/net-uk-sweet/cool-wall.git"
+  },
+	"dependencies": { "express": ">= 3.0.3" }
+}

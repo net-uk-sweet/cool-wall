@@ -1,0 +1,6 @@
+<label for="<%= id %>"><%= title %></label>
+<select name="<%= title %>" id="<%= id %>" multiple>
+	<% _.each(options, function(option){ %>
+ 		<option value="<%= option.id %>"><%= option.title %></option>  
+	<% }); %>	
+</select>

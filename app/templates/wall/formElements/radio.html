@@ -1,0 +1,5 @@
+<legend><%= title %></legend>
+<% _.each(options, function(option){ %>
+	<input value="<%= option.id %>" name="<%= id %>" type="radio" /> 
+	<label for="<%= option.id %>"><%= option.title %></label>
+<% }); %>	
