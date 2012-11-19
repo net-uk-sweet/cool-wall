@@ -4,6 +4,8 @@ var application_root = __dirname,
 
 var app = express();
 
+// TODO: useful if we could combine the Grunt build stuff with this
+
 console.log("Server running on localhost:8000");
 // Database
 // mongoose.connect('mongodb://localhost/ecomm_database');
@@ -22,25 +24,31 @@ app.get('/api', function (req, res) {
 	res.send('cool-wall RESTful API is running');
 })
 .get('/api/survey/:id', function(req, res) {
-	var survey = { 
+	res.send({ 
 		id: req.params.id, 
 		wallId: "54321", 
 		filters: getFilters()
-	};
-	res.send(survey);
+	});
 })
-.get('/api/wall/:id', function(req, res)          {
-	var wall = {
+.get('/api/wall/:id', function(req, res) {
+	res.send({
 		id: req.params.id,
 		title: "My first wall",
 		vLabel: {top: "phlegmatic", bottom: "choleric"},
-		hLabel: {top: "sanguine", bottom: "melancholy"},
+		hLabel: {top: "sanguine", bottom: "melancholic"},
 		items: getItems()
-	};
-	res.send(wall);
+	});
 })
 .get('/api/result/:id', function(req, res) {
 	res.send('No results ');
+})
+.post('/api/result', function(req, res) {
+	var result = {
+		filters: req.body.filters,
+		items: req.body.items
+	};
+	console.log("Results posted:", result);
+	res.send(result);
 });
 
 // Helper methods to create some test data
@@ -70,8 +78,7 @@ function getOptions(filterId) {
 }
 function getItems() {
 	var arr = [];
-	for (var i = 0; i < 5; i ++) 
-	{
+	for (var i = 0; i < 5; i ++) {
 		arr.push({
 			id: "wId_" + i,
 			title: "Wall item " + i,

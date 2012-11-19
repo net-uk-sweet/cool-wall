@@ -33,7 +33,8 @@ function(app, Backbone) {
 
     initialize: function() {
       // console.log("WallView.initialize()", this.model);
-      this.collection.on('change', this.validate, this);
+      // Namespace allows us to define the particular property we're interested in
+      this.collection.on('change:point', this.validate, this);
     }, 
 
     // Render (plus before and after) events of all views are being fired
@@ -56,39 +57,37 @@ function(app, Backbone) {
 
     itemDropHandler: function(e, ui) {
 
-      var $draggable = $(ui.draggable);
-
-      var id = $draggable.attr('id');
-      var position = $draggable.position;
-      var offset = $draggable.offset;
-
       // Retrieve the model associated with the droppable item by guid.
       // Remember when using underscore directly to pass array, ie. use
       // this.collection.models rather than collection.
       var model = this.collection.find(function(m) { 
-        return m.get('id') === id;
+        return m.get('id') === ui.draggable.attr('id');
       });
 
       //console.log("WallView.dropHandler: ", guid, model);
 
       // Update the model with the droppable item's position
       model.set('point', {
-        x: position.x, 
-        y: position.y
+        left: ui.offset.left, 
+        top: ui.offset.top
       });
     },
 
     submitClickHandler: function(e) {
       // Prepare and save ResultsModel to save to server.
-      console.log("WallView.submitClickHandler:", this.collection); 
+      //console.log("WallView.submitClickHandler:", this.collection); 
+      app.trigger('wall:submit');
     },
 
     validate: function() {
        // When there are no invalid models left, ie. all of them have 
       // a selected property, the form is valid and can be submitted.
-      var invalid = this.collection.where({point: undefined});
+      var invalid = this.collection.find(function(m) {
+        return m.get('point') === undefined;
+      });
+
       // console.log("WallView.validate: valid: ", invalid.length == 0, invalid);
-      if (!invalid.length) {
+      if (!invalid) {
         $('#submit').fadeIn('slow');
       }     
     },
@@ -165,7 +164,10 @@ function(app, Backbone) {
   Views.FormView = Backbone.View.extend({
 
     template: "wall/formView",
-    tagName: "form",
+    //tagName: "form",
+
+    // Using form element here causes form data to be posted on route change
+    tagName: "div", // Superfluous div!
 
     first: true,
 
@@ -175,10 +177,10 @@ function(app, Backbone) {
       "click button#submit" : "submitClickHandler"
     },
 
-    initialize: function() {
+    initialize: function(options) {
       // Changes to child form elements update the associated model and 
       // the change is picked up here to prompt validation of collection
-      this.collection.on('change', this.validate, this);
+      this.collection.on('change:selected', this.validate, this);
     },
 
     beforeRender: function() {
@@ -210,22 +212,28 @@ function(app, Backbone) {
     },
 
     validate: function() {
+
       // When there are no invalid models left, ie. all of them have 
       // a selected property, the form is valid and can be submitted.
-      var invalid = this.collection.where({selected: undefined}); // could optimise this
-      // console.log("WallView.validate: valid: ", invalid.length == 0, invalid);
-      if (!invalid.length) {
+      var invalid = this.collection.find(function(m) {
+        return m.get('selected') === undefined;
+      }); 
+
+      if (!invalid) {
         $('#submit').fadeIn('slow');
       }
     },
 
+    // Actually, this button should probably have its own view
     submitClickHandler: function(e) {
-      console.log("FormView.submitClickHandler", e, this.model.id);
-      // We probably won't save the data at this point so
-      // click will probably take us directly to wall route
-      app.router.navigate("wall/"); 
-      // This is clearly bad practice. We should probably be firing an event
-      // and handling the updating of the route in the app.
+      // console.log("FormView.submitClickHandler", e);
+
+      // In this instance, it seems better practice to fire an event than update
+      // the route directly because the route will need the wallId of the current 
+      // survey to instantiate the correct wall. 
+      app.trigger("survey:submit"); 
+      // could have a data payload as second param of trigger call, but the collection 
+      // was updated on each form element change so there is no need to.
     }
   });
 

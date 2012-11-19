@@ -65,14 +65,6 @@ function(app, Backbone, Views) {
   // Item Model
   Wall.ItemModel = Backbone.Model.extend({
     
-    initialize: function() {
-      this.on('change', this.output, this);
-    },
-
-    output: function() {
-      console.log("Model changed: " + this.get("title"));
-    }, 
-
     validate: function(attrs) {
 
       // Flag out of range item positions
@@ -91,8 +83,11 @@ function(app, Backbone, Views) {
     model: Wall.ItemModel 
   });
 
-  // Wall Views
-  // ----------
+  // -------------------------------------------------------------
+  // ResultModel model
+  Wall.ResultModel = Backbone.Model.extend({
+    url: "http://localhost:8000/api/result/"
+  });
 
   // Attach the Views sub-module into this module.
   Wall.Views = Views;
