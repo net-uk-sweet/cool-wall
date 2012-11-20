@@ -32,7 +32,7 @@ function(app, Backbone) {
     },
 
     initialize: function() {
-      // console.log("WallView.initialize()", this.model);
+      // console.log("WallView.initialize()", this.model, Modernizr.canvas);
       // Namespace allows us to define the particular property we're interested in
       this.collection.on('change:point', this.validate, this);
     }, 
@@ -53,6 +53,35 @@ function(app, Backbone) {
       this.$el.droppable({
         activeClass: "ui-state-active"
       });
+
+      if (Modernizr.canvas) {
+        var canvas = $('#grid')[0];
+        var ctx = canvas.getContext('2d');
+
+        ctx.strokeStyle = '#000';
+
+        this.drawAxis(canvas, ctx, 10, true);
+        this.drawAxis(canvas, ctx, 10, false);
+      } // Can we handle the fallback in the HTML?
+    },
+
+    drawAxis: function(canvas, ctx, divisions, vertical) {
+      var inc = canvas.width / divisions;
+      for (var i = 1; i < divisions; i ++) {
+        point = (i *  inc) - 0.5;
+        // console.log("Vitals", point, inc);
+        ctx.lineWidth = (i == (divisions / 2)) ? 2 : 1;
+        ctx.beginPath();
+        ctx.moveTo(
+          vertical ? point : 0, 
+          vertical ? 0 : point
+        );
+        ctx.lineTo(
+          vertical ? point : canvas.width, 
+          vertical ? canvas.height : point
+        );
+        ctx.stroke();
+      }
     },
 
     itemDropHandler: function(e, ui) {
@@ -64,7 +93,7 @@ function(app, Backbone) {
         return m.get('id') === ui.draggable.attr('id');
       });
 
-      //console.log("WallView.dropHandler: ", guid, model);
+      // console.log("WallView.dropHandler: ", model);
 
       // Update the model with the droppable item's position
       model.set('point', {
@@ -99,7 +128,7 @@ function(app, Backbone) {
       // class since most times, at least in the case of this project, 
       // no further processing is required. 
       return this.model.toJSON();
-    },
+    }
   });
 
 

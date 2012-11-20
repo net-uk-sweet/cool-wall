@@ -17,8 +17,6 @@ function(app, Backbone, Views) {
   // Survey consists of wall id and the filters for this survey
   Wall.SurveyModel = Backbone.Model.extend({
 
-    url: "http://localhost:8000/api/survey/", // + survey id
-
     parse: function(response) {
 
       // preprocess filters into a collection before returning response
@@ -29,7 +27,7 @@ function(app, Backbone, Views) {
 
     url: function() {
       // Get the data for the survey specified in the accessing URL
-      return "http://localhost:8000/api/survey/" + this.id
+      return "http://localhost:8000/api/survey/" + this.id;
     }
   });
 
@@ -58,7 +56,7 @@ function(app, Backbone, Views) {
     }, 
 
     url: function() {
-      return "http://localhost:8000/api/wall/" + this.id
+      return "http://localhost:8000/api/wall/" + this.id;
     }
   });
 

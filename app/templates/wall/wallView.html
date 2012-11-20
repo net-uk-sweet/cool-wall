@@ -1,6 +1,11 @@
-<h1><%= title %></h1>
-<p><%= hLabel.top %></p>
-<p><%= hLabel.bottom %></p>
-<p><%= vLabel.top %></p>
-<p><%= vLabel.bottom %></p>
+<h1><%= title %></h1> <!-- this feels a bit out of place here -->
+<canvas id="grid" width="700" height="700"></canvas>
+<div id="labels">
+	<p><%= hLabel.top %></p>
+	<p><%= hLabel.bottom %></p>
+	<p><%= vLabel.top %></p>
+	<p><%= vLabel.bottom %></p>
+</div>
+<div id="target"></div>
+<!-- need this in a separate view -->
 <button id="submit">submit</button>
