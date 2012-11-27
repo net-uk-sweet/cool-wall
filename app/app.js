@@ -1,94 +1,132 @@
 define([
-  // Libraries.
-  "jquery",
-  "lodash",
-  "backbone",
 
-  // Plugins.
-  "plugins/backbone.layoutmanager",
-  "libs/jquery-ui"
-],
+  // Libraries
+  'jquery',
+  'lodash',
+  'backbone',
+  'marionette'
+], 
 
-function($, _, Backbone) {
+function($, _, Backbone, Marionette) {
+  
+  "use strict";
 
-  // Provide a global location to place configuration settings and module
-  // creation.
-  var app = {
-    // The root path to run the application.
-    root: "/"
-  };
+  /* =========================================================================
+   * The following will make Marionette's template retrieval work with
+   * in both development (templates found in html files) and production
+   * environment (templates all compiled AS JST templates into the require.js
+   * file. This will also use JST instead of the Marionette.TemplateCache.
+   */
+  Backbone.Marionette.Renderer.render = function(templateId, data) {
+    var path = 'app/templates/' + templateId + '.html';
 
-  // Localize or create a new JavaScript Template object.
-  var JST = window.JST = window.JST || {};
+    // Localize or create a new JavaScript Template object.
+    var JST = window.JST = window.JST || {};
 
-  // Configure LayoutManager with Backbone Boilerplate defaults.
-  Backbone.LayoutManager.configure({
-    // Allow LayoutManager to augment Backbone.View.prototype.
-    manage: true,
-
-    prefix: "app/templates/",
-
-    fetch: function(path) {
-      // Initialize done for use in async-mode
-      var done;
-
-      // Concatenate the file extension.
-      path = path + ".html";
-
-      // If cached, use the compiled template.
-      if (JST[path]) {
-        return JST[path];
-      } else {
-        // Put fetch into `async-mode`.
-        done = this.async();
-
-        // Seek out the template asynchronously.
-        return $.ajax({ url: app.root + path }).then(function(contents) {
-          done(JST[path] = _.template(contents));
-        });
-      }
+    // Make a blocking ajax call (does not reduce performance in production,
+    // because templates will be contained by the require.js file).
+    if (!JST[path]) {
+      $.ajax({
+        url: App.root + path,
+        async: false
+      }).then(function(templateHtml) {
+        JST[path] = _.template(templateHtml);
+      });
     }
+
+    if (!JST[path]) {
+      var msg = 'Could not find "' + templateId + '"';
+      var error = new Error(msg);
+      error.name = 'NoTemplateError';
+      throw error;
+    }
+
+    // Call the template function with the data.
+    return JST[path](data);
+  };
+  /* ======================================================================== */
+
+  var App = new Backbone.Marionette.Application();
+  
+  // Set up basic paths.
+  App.root = '/';
+
+  // Add the main region, that will hold the page layout.
+  App.addRegions({
+    main: '#main'
   });
 
-  // Mix Backbone.Events, modules, and layout management into the app object.
-  return _.extend(app, {
+  // Adds any methods to be run after the app was initialized.
+  App.addInitializer(function() {
+    this.initAppLayout();
+    this.initAppEvents();
+  });
 
-    // Create a custom object with a nested Views object.
-    module: function(additionalProps) {
-      return _.extend({ Views: {} }, additionalProps);
-    },
 
-    // Helper for using layouts.
-    useLayout: function(name, options) {
-      // If already using this Layout, then don't re-inject into the DOM.
-      if (this.layout && this.layout.options.template === name) {
-        return this.layout;
+  App.on("initialize:after", function(){
+    Backbone.history.start({ /*pushState: true*/ });
+  });
+
+  // The main initializing function sets up the basic layout and its regions.
+  App.initAppLayout = function() {
+
+    // Define the layouts for each route
+    var SurveyLayout = Backbone.Marionette.Layout.extend({
+      template: 'layouts/survey',
+      regions: {
+        form: '#form',
+        buttons: '#buttons'
       }
+    });
 
-      // If a layout already exists, remove it from the DOM.
-      if (this.layout) {
-        this.layout.remove();
+    var WallLayout = Backbone.Marionette.Layout.extend({
+      template: 'layouts/wall',
+      regions: {
+        wall: '#wall',
+        menu: '#menu',
+        buttons: '#buttons'
       }
+    });
 
-      // Create a new Layout with options.
-      var layout = new Backbone.Layout(_.extend({
-        template: name,
-        className: "layout " + name,
-        id: "layout"
-      }, options));
+    var ResultLayout = Backbone.Marionette.Layout.extend({
+      template: 'layouts/result',
+      regions: {
+        wall: '#wall',
+        filters: '#filters',
+        buttons: '#buttons'
+      } 
+    });
 
-      // Insert into the DOM.
-      $("#main").empty().append(layout.el);
+    // Create and cache instances of the layout for each route
+    App.surveyLayout = new SurveyLayout();
+    App.wallLayout = new WallLayout(); 
+    App.resultLayout = new ResultLayout();
+  };
+  
+  App.initAppEvents = function() {
+    // All links with the role attribute set to nav-main will navigate through
+    // the application's router.
+    $('a[role=nav-main]').click(function(e) {
+      e.preventDefault();
+      App.Router.navigate($(this).attr('href'), {
+        trigger: true
+      });
+    });
 
-      // Render the layout.
-      layout.render();
+    App.vent.on('survey:submit', function(e) {
+      // e is the WallModel instance passed as event object
+      App.ResultModel.set('filters', e.get('filters'));
+      App.Router.navigate('wall/' + e.get('wallId'), { trigger: true });
+    });
 
-      // Cache the refererence.
-      this.layout = layout;
+    App.vent.on('wall:submit', function(e) {
+      App.Router.navigate('result', { trigger: true });
+    });
 
-      // Return the reference, for chainability.
-      return layout;
-    }
-  }, Backbone.Events);
+    App.vent.on('result:submit', function(e) {
+      // Gonna want to load data here
+    });
+  };
 
+  return App;
 });

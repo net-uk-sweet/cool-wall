@@ -59,6 +59,7 @@ function getFilters() {
 			id: "fId_" + i,
 			title: "Filter " + i,
 			type: "select", // probably only ever need this type
+			selected: 0,
 			options: getOptions(i)
 		});
 	}
@@ -69,9 +70,7 @@ function getOptions(filterId) {
 	for (var i = 0; i < 3; i ++) {
 		arr.push({
 			id: "oId_" + filterId + "_" + i,
-			title: "Option " + i,
-			// selected added dynamically by client
-			// selected: null
+			title: "Option " + i
 		});
 	}
 	return arr;

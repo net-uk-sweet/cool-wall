@@ -1,3 +1,7 @@
+// Use ECMAScript 5 Strict Mode. Why? John Resig says we should:
+// http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
+"use strict";
+
 // Set the require.js configuration for your application.
 require.config({
 
@@ -15,10 +19,18 @@ require.config({
     jqueryui: "../assets/js/libs/jquery-ui",
     /*touchpunch: "../assets/js/libs/jquery.ui.touch-punch",*/
     lodash: "../assets/js/libs/lodash",
-    backbone: "../assets/js/libs/backbone"
+    backbone: "../assets/js/libs/backbone",
+    marionette: "../assets/js/libs/backbone.marionette"
   },
 
   shim: {
+
+    // Marionette depends on backbone
+    marionette: { 
+      deps: ["backbone"],
+      exports: "Backbone.Marionette"
+    },
+
     // Backbone library depends on lodash and jQuery.
     backbone: {
       deps: ["lodash", "jquery"],

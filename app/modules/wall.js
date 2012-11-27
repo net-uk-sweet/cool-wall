@@ -8,10 +8,14 @@ define([
   "modules/wall/views"
 ],
 
-function(app, Backbone, Views) {
+function(App, Backbone, Views) {
 
-  // Create a new module
-  var Wall = app.module();
+  // Not 100% clear on how Marionette Modules play with require. 
+  // Plus, call to Marionette.Application.module() throws an error 
+  // anyway. 
+
+  // var Wall = App.module('WallModule');
+  var Wall = {};
 
   // -------------------------------------------------------------
   // Survey consists of wall id and the filters for this survey
@@ -34,19 +38,38 @@ function(app, Backbone, Views) {
   // NB. order is important here... must define the model before the list
   Wall.FilterModel = Backbone.Model.extend({});
 
-  Wall.FilterList = Backbone.Collection.extend({ model: Wall.FilterModel });
+  Wall.FilterList = Backbone.Collection.extend({ 
+    
+    model: Wall.FilterModel, 
+
+    isValid: function() {
+      // When there are no invalid models left, ie. all of them have 
+      // a selected property, the form is valid and can be submitted.
+      var invalid = this.find(function(m) {
+        return m.get('selected') == 0;
+      }); 
+
+      return !invalid;
+    },
+
+    isChanged: function() {
+      // console.log("FilterList.isChanged:", this.where({selected: 0}), this.size());
+      return this.where({selected: 0}).length < this.size();
+    },
+
+    // Wanna call this reset, but there's a reset method in Backbone.collection already.
+    // Actually, in this case, resetSelected would be more accurate but we may want to 
+    // share the button code which calls it, so a generic name is more suitable 
+    purge: function() {
+      // Rest all selected states
+      _.map(this.models, function(m) { m.set({ selected: 0 }) });
+    }
+  });
 
   // -------------------------------------------------------------
   // Wall Model 
   Wall.WallModel = Backbone.Model.extend({
     
-    /*
-      guid:String - Unique item id
-      title:String - Item title
-      src:String - Path to image file
-      point:Object - x and y coordinates of item
-    */
-
     parse: function(response) {
 
       // preprocess items into a collection before returning response
@@ -78,7 +101,17 @@ function(app, Backbone, Views) {
     // Specifying the model type in the collection definition lets Backbone 
     // know what model type to create if you pass raw JSON to the collection
     // instead of a Backbone.Model object.
-    model: Wall.ItemModel 
+    model: Wall.ItemModel,
+
+    isValid: function() {
+      // When there are no invalid models left, ie. all of them have 
+      // a selected property, the form is valid and can be submitted.
+      var invalid = this.find(function(m) {
+        return m.get('point') === undefined;
+      });   
+
+      return !invalid;   
+    } 
   });
 
   // -------------------------------------------------------------

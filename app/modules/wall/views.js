@@ -2,27 +2,20 @@ define([
   "app",
 
   // Libs
-  "backbone"
+  "backbone",
+  "jqueryui" // augments jquery so no need to reference directly
 ],
 
-function(app, Backbone) {
+function(App, Backbone) {
   
   var Views = {};
 
-  // Wallview (wall and result)
-  Views.WallView = Backbone.View.extend({
+  // -----------------------------------------------------
+  // Wall view (the main man)
+  // -----------------------------------------------------
 
-    // This is actually an instance of LayoutView but we have 
-    // Backbone.LayoutManager.manage set to true in configuration
-    // section of app.js which allows LayoutManager to globally 
-    // augment the standard Backbone view.
+  Views.WallView = Backbone.Marionette.ItemView.extend({
 
-
-    // This is the flag which tells LayoutManager it needs to do 
-    // something in the render method, otherwise it assumes rendering
-    // will be done manually. This could also be a jQuery selector
-    // pointing to an element in a script tag with an unrecognised 
-    // type attribute.
     template: "wall/wallView",
 
     events: {
@@ -31,22 +24,32 @@ function(app, Backbone) {
       "click #submit": "submitClickHandler"
     },
 
+    // Short-hand method of binding to collection and model events which is 
+    // apparently supported by Marionette. Doesn't appear to work here.
+
+    // collectionEvents: {
+    //   "change:point": "validate"
+    // },
+
     initialize: function() {
-      // console.log("WallView.initialize()", this.model, Modernizr.canvas);
-      // Namespace allows us to define the particular property we're interested in
-      this.collection.on('change:point', this.validate, this);
+
+     // Model contains this view's collection
+     this.collection = this.model.get('items');
+
+     // bindTo is preferred over on and allows close method to clean up listeners
+     this.bindTo(this.collection, "change:point", this.validate);
     }, 
 
-    // Render (plus before and after) events of all views are being fired
-    // twice (LayoutManager plug-in is the suspect).
-    // Wasted enough time trying to solve it so ignoring it for now. 
-    beforeRender: function() {
-      // console.log("WallView.beforeRender");
+    // Marionette.View specific method called by RegionManager on close
+    // to handle the clean-up of the view. 
+    close: function() {
+      this.remove();
+      this.unbind();
     },
 
-    // Need to wait until afterRender to make $el droppable, presumably
-    // because in initialize the element has not been added to DOM yet. 
-    afterRender: function() {
+    // Marionette.View specific hook for anything which needs access to DOM elements
+    // in loaded templates. Analagous to LayoutManager's afterRender method.
+    onShow: function() {
 
       $('#submit').hide();
 
@@ -62,23 +65,21 @@ function(app, Backbone) {
 
         this.drawAxis(canvas, ctx, 10, true);
         this.drawAxis(canvas, ctx, 10, false);
-      } // Can we handle the fallback in the HTML?
+      } // Can we handle Canvas fallback in the HTML?
     },
 
     drawAxis: function(canvas, ctx, divisions, vertical) {
-      var inc = canvas.width / divisions;
-      for (var i = 1; i < divisions; i ++) {
-        point = (i *  inc) - 0.5;
+      for (var i = 1, inc = canvas.width / divisions; i < divisions; i ++) {
+        // For nice rendering, canvas lines of uneven widths need offsetting
+        point = (i *  inc) - 0.5; 
         // console.log("Vitals", point, inc);
         ctx.lineWidth = (i == (divisions / 2)) ? 2 : 1;
         ctx.beginPath();
-        ctx.moveTo(
-          vertical ? point : 0, 
-          vertical ? 0 : point
-        );
+        // Some daft boolean logic coming up
+        ctx.moveTo(vertical * point, !vertical * point);
         ctx.lineTo(
-          vertical ? point : canvas.width, 
-          vertical ? canvas.height : point
+          vertical * point || canvas.width, 
+          !vertical * point || canvas.height
         );
         ctx.stroke();
       }
@@ -104,72 +105,23 @@ function(app, Backbone) {
 
     submitClickHandler: function(e) {
       // Prepare and save ResultsModel to save to server.
-      //console.log("WallView.submitClickHandler:", this.collection); 
-      app.trigger('wall:submit');
+      // console.log("WallView.submitClickHandler:", this.collection); 
+      App.vent.trigger('wall:submit');
     },
 
     validate: function() {
-       // When there are no invalid models left, ie. all of them have 
-      // a selected property, the form is valid and can be submitted.
-      var invalid = this.collection.find(function(m) {
-        return m.get('point') === undefined;
-      });
-
       // console.log("WallView.validate: valid: ", invalid.length == 0, invalid);
-      if (!invalid) {
+      if (this.collection.isValid()) {
         $('#submit').fadeIn('slow');
       }     
-    },
-
-    // Need to serialize our model data for the template
-    serialize: function() {
-      // Pass the whole model, template will render only what it needs.
-      // Wonder if it might make sense to do this by default in the base 
-      // class since most times, at least in the case of this project, 
-      // no further processing is required. 
-      return this.model.toJSON();
     }
   });
 
+  // -----------------------------------------------------
+  // Item menu views
+  // -----------------------------------------------------
 
-  // MenuView (wall)
-  // ----------
-  Views.MenuView = Backbone.View.extend({
-    /*template: "wall/stats",*/
-
-    // May want a template when / if we add controls for the menu.
-    // Presently, we're just injecting a bunch of items into a list 
-
-    tagName: "ul",
-
-    first: true,
-
-    initialize: function() {
-      // console.log("MenuView.initialize()", this.collection);
-    }, 
-
-    beforeRender: function() {
-
-      // Hack to prevent problems resulting from 
-      // initial multiple beforeRender calls      
-      if (this.first) {
-        this.first = false;
-        return;
-      }
-
-      // Create an item view for each model in collection
-      this.collection.each(this.renderItem, this);
-    },
-
-    renderItem: function(itemModel) {
-      // console.log("MenuView.renderItem", itemModel);
-      this.insertView(new Views.ItemView({
-        model: itemModel        
-      }));
-    }
-  });
-
-  Views.ItemView = Backbone.View.extend({
+  Views.ItemView = Backbone.Marionette.ItemView.extend({
 
     tagName: "li",
     template: "wall/itemView",
@@ -178,112 +130,117 @@ function(app, Backbone) {
       // console.log("ItemView.initialize");
     },
 
-    afterRender: function() {
+    onRender: function() {
       // $el is the view element (li) wrapped by jQuery
       // We want the child image to be draggable
       this.$el.find('img').draggable();
-    },
-
-    serialize: function() {
-      return this.model.toJSON();
     }
   });
 
+  Views.MenuView = Backbone.Marionette.CollectionView.extend({
+    /*template: "wall/stats",*/
 
-  Views.FormView = Backbone.View.extend({
+    // May want a template when / if we add controls for the menu.
+    // Presently, we're just injecting a bunch of items into a list 
+    tagName: "ul",
+    itemView: Views.ItemView,
+  });
 
-    template: "wall/formView",
-    //tagName: "form",
+  // -----------------------------------------------------
+  // Survey (form) views
+  // -----------------------------------------------------
 
-    // Using form element here causes form data to be posted on route change
-    tagName: "div", // Superfluous div!
+  Views.FilterItem = Backbone.Marionette.ItemView.extend({
 
-    first: true,
+    tagName: "fieldset",
+
+    events: {
+      "change select": "elementSelectHandler"
+    },
+
+    initialize: function() {
+      // Again.. Marionette scope seems to be broken on bindTo
+      //this.bindTo(this.model, 'change:selected', this.modelSelectHandler)
+      this.model.bind('change:selected', this.modelSelectHandler, this);
+    },
+
+    // Choose template according to filter type.
+    // In reality, they're all select types for now
+    getTemplate: function(){
+      return "wall/formElements/" + this.model.get('type');
+    },
+
+    elementSelectHandler: function(e) {
+      // console.log("FilterItem.selected:", e, this);
+      this.model.set('selected', $(e.currentTarget).val());
+    }, 
+
+    modelSelectHandler: function(e) {
+      // Feels a bit ugly this, but we don't want to react to changes
+      // to the model invoked by a change on the view's element. Here
+      // we're interested in a change to the collection prompted by 
+      // a purge. 
+      if (this.model.get('selected') === 0) {
+        $('select', this.$el).prop('selectedIndex', 0); 
+      }
+    }
+  });
+
+  Views.SurveyView = Backbone.Marionette.CollectionView.extend({ itemView: Views.FilterItem });
+
+  Views.ButtonView = Backbone.Marionette.ItemView.extend({
+
+    template: 'wall/buttonView',
+
+    $submitButton: null,
+    $resetButton: null,
 
     events: {
       // Specificity not essential here, but would be if 
       // further buttons were added.
-      "click button#submit" : "submitClickHandler"
+      "click input[type=submit]" : "submitClickHandler",
+      "click input[type=reset]" : "resetClickHandler"
     },
 
     initialize: function(options) {
+
+      // Scope on Marionette bindTo seems to be bust in v.1 beta
+      // this.bindTo(this.collection, 'change:selected', this.validate);
+
       // Changes to child form elements update the associated model and 
       // the change is picked up here to prompt validation of collection
       this.collection.on('change:selected', this.validate, this);
     },
 
-    beforeRender: function() {
-
-      // Hack to prevent problems resulting from 
-      // initial multiple beforeRender calls      
-      if (this.first) {
-        this.first = false;
-        return;
-      }
-
-      this.collection.each(this.renderItem, this);
-    },
-
-    renderItem: function(filterModel) {
-      //console.log("FormView.renderItem", filterModel);
-
-      this.insertView(new Views.FormItem({
-        model: filterModel,
-        // Pick the template according to filter type. In reality, for ease,
-        // we're only testing for select which could conceivably be used for 
-        // any filter. 
-        template: "wall/formElements/" + filterModel.get('type')
-      }));
-    },
-
-    afterRender: function() {
-      $("#submit").hide();
+    onShow: function() {
+      // Cache references to the buttons and hide them
+      this.$submitButton = $('input[type=submit]').hide();
+      this.$resetButton = $('input[type=reset]').hide();
     },
 
     validate: function() {
+        // console.log("ButtonView.validate:");
+        this.showButton(this.$resetButton, this.collection.isChanged());
+        this.showButton(this.$submitButton, this.collection.isValid());
+    },
 
-      // When there are no invalid models left, ie. all of them have 
-      // a selected property, the form is valid and can be submitted.
-      var invalid = this.collection.find(function(m) {
-        return m.get('selected') === undefined;
-      }); 
-
-      if (!invalid) {
-        $('#submit').fadeIn('slow');
+    showButton: function($button, show) {
+      if (show) {
+        $button.fadeIn('slow');
+      } else {
+        $button.fadeOut('slow');
       }
     },
 
     // Actually, this button should probably have its own view
     submitClickHandler: function(e) {
       // console.log("FormView.submitClickHandler", e);
+      // Let the App handle the submission
+      App.vent.trigger("survey:submit", this.model); 
+    }, 
 
-      // In this instance, it seems better practice to fire an event than update
-      // the route directly because the route will need the wallId of the current 
-      // survey to instantiate the correct wall. 
-      app.trigger("survey:submit"); 
-      // could have a data payload as second param of trigger call, but the collection 
-      // was updated on each form element change so there is no need to.
-    }
-  });
-
-  Views.FormItem = Backbone.View.extend({
-
-    // Parent view will set the template 
-    // template: "wall/formElement/type"
-
-    tagName: "fieldset",
-
-    events: {
-      "change select": "selectChangeHandler"
-    },
-
-    selectChangeHandler: function(e) {
-      // console.log("FormItem.itemChangeHandler", e, this);
-      this.model.set('selected', $(e.currentTarget).val());
-    },
-
-    serialize: function() {
-      return this.model.toJSON();
+    resetClickHandler: function(e) {
+      this.collection.purge();
     }
   });
 
