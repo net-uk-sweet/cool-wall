@@ -3,25 +3,77 @@ define([
 
   // Libs
   "backbone",
+  "grid",
   "jqueryui" // augments jquery so no need to reference directly
 ],
 
-function(App, Backbone) {
+function(App, Backbone, grid) {
   
   var Views = {};
 
   // -----------------------------------------------------
-  // Wall view (the main man)
-  // -----------------------------------------------------
+  // The root view of the wall route
 
-  Views.WallView = Backbone.Marionette.ItemView.extend({
+  Views.WallView = Backbone.Marionette.Layout.extend({ 
+
+    template: 'layouts/wall',
+    
+    regions: {
+      wall: '#wall',
+      menu: '#menu',
+      buttons: '#buttons'
+    },
+
+    events: {
+      // Catch bubbled events from child button view
+      "click input[type=submit]" : "submitHandler",
+      "click input[type=reset]" : "resetHandler"
+    },
+
+    initialize: function() {
+      this.collection = this.model.get('items');
+    },
+
+    onShow: function() {
+      // Create the form view
+      this.wall.show(
+        new Views.InteractiveCanvasView({
+          model: this.model,
+          collection: this.collection
+        })
+      );
+      // Create the menu view
+      this.menu.show(
+        new Views.MenuView({
+          collection: this.collection
+        })
+      );
+      // Create the buttons view
+      this.buttons.show(
+        new Views.ButtonView({
+          collection: this.collection
+        })
+      );
+    },
+
+    // Actually, this button should probably have its own view
+    submitHandler: function(e) {
+      // console.log("FormView.submitHandler", App);
+      // Let the App handle the submission
+      App.vent.trigger("wall:submit", this.model); 
+    }, 
+
+    resetHandler: function(e) {
+      this.collection.purge();
+    }
+  });
+
+  Views.InteractiveCanvasView = Backbone.Marionette.ItemView.extend({
 
     template: "wall/wallView",
 
     events: {
-      // No specificity here, may be required later
-      "drop": "itemDropHandler",
-      "click #submit": "submitClickHandler"
+      "drop": "itemDropHandler"
     },
 
     // Short-hand method of binding to collection and model events which is 
@@ -32,58 +84,12 @@ function(App, Backbone) {
     // },
 
     initialize: function() {
-
      // Model contains this view's collection
      this.collection = this.model.get('items');
 
      // bindTo is preferred over on and allows close method to clean up listeners
      this.bindTo(this.collection, "change:point", this.validate);
     }, 
-
-    // Marionette.View specific method called by RegionManager on close
-    // to handle the clean-up of the view. 
-    close: function() {
-      this.remove();
-      this.unbind();
-    },
-
-    // Marionette.View specific hook for anything which needs access to DOM elements
-    // in loaded templates. Analagous to LayoutManager's afterRender method.
-    onShow: function() {
-
-      $('#submit').hide();
-
-      this.$el.droppable({
-        activeClass: "ui-state-active"
-      });
-
-      if (Modernizr.canvas) {
-        var canvas = $('#grid')[0];
-        var ctx = canvas.getContext('2d');
-
-        ctx.strokeStyle = '#000';
-
-        this.drawAxis(canvas, ctx, 10, true);
-        this.drawAxis(canvas, ctx, 10, false);
-      } // Can we handle Canvas fallback in the HTML?
-    },
-
-    drawAxis: function(canvas, ctx, divisions, vertical) {
-      for (var i = 1, inc = canvas.width / divisions; i < divisions; i ++) {
-        // For nice rendering, canvas lines of uneven widths need offsetting
-        point = (i *  inc) - 0.5; 
-        // console.log("Vitals", point, inc);
-        ctx.lineWidth = (i == (divisions / 2)) ? 2 : 1;
-        ctx.beginPath();
-        // Some daft boolean logic coming up
-        ctx.moveTo(vertical * point, !vertical * point);
-        ctx.lineTo(
-          vertical * point || canvas.width, 
-          !vertical * point || canvas.height
-        );
-        ctx.stroke();
-      }
-    },
 
     itemDropHandler: function(e, ui) {
 
@@ -103,17 +109,25 @@ function(App, Backbone) {
       });
     },
 
-    submitClickHandler: function(e) {
-      // Prepare and save ResultsModel to save to server.
-      // console.log("WallView.submitClickHandler:", this.collection); 
-      App.vent.trigger('wall:submit');
-    },
+    // Marionette.View specific method called by RegionManager on close
+    // to handle the clean-up of the view. 
+    // close: function() {
+    //   this.remove();
+    //   this.unbind();
+    // },
 
-    validate: function() {
-      // console.log("WallView.validate: valid: ", invalid.length == 0, invalid);
-      if (this.collection.isValid()) {
-        $('#submit').fadeIn('slow');
-      }     
+    // Marionette.View specific hook for anything which needs access to DOM elements
+    // in loaded templates. Analagous to LayoutManager's afterRender method.
+    onShow: function() {
+
+      this.$el.droppable({
+        activeClass: 'ui-state-active',
+        tolerance: 'fit'
+      });
+
+      if (Modernizr.canvas) {
+        grid.draw(this.$el.find('canvas')[0]);
+      } // cld handle fallback in html
     }
   });
 
@@ -128,12 +142,29 @@ function(App, Backbone) {
 
     initialize: function() {
       // console.log("ItemView.initialize");
+      this.model.bind('change:point', this.pointChangeHandler, this)
     },
 
-    onRender: function() {
-      // $el is the view element (li) wrapped by jQuery
-      // We want the child image to be draggable
-      this.$el.find('img').draggable();
+    onRender: function() {  
+      this.model.set({ start: this.$el.position() }, { silent: true });
+
+      this.$el.draggable({ 
+        revert: 'invalid',
+        snap: '.ui-droppable',
+        stack: 'li',
+        cursorAt: {top: 50, left:50}
+      })
+      .attr({ id: this.model.id }); // Store model id for look up on drop
+    },
+
+    pointChangeHandler: function() {
+      // console.log("ItemView.pointChangeHandler:", this.model.get('point'));
+      // If the point has been reset we reset the element
+      if (this.model.get('point') === null) {
+        var start = this.model.get('start');
+        // console.log("ItemView.pointChangeHandler:", start);
+        this.$el.css({ top: start.top, left: start.left });
+      }
     }
   });
 
@@ -150,7 +181,7 @@ function(App, Backbone) {
   // Survey (form) views
   // -----------------------------------------------------
 
-  Views.FilterItem = Backbone.Marionette.ItemView.extend({
+  Views.FormItem = Backbone.Marionette.ItemView.extend({
 
     tagName: "fieldset",
 
@@ -186,7 +217,108 @@ function(App, Backbone) {
     }
   });
 
-  Views.SurveyView = Backbone.Marionette.CollectionView.extend({ itemView: Views.FilterItem });
+  // The root view of the survey route
+  Views.SurveyView = Backbone.Marionette.Layout.extend({ 
+
+    template: 'layouts/survey',
+    
+    regions: {
+      form: '#form',
+      buttons: '#buttons'
+    },
+
+    events: {
+      // Catch bubbled events from child button view
+      "click input[type=submit]" : "submitHandler",
+      "click input[type=reset]" : "resetHandler"
+    },
+
+    initialize: function() {
+      this.collection = this.model.get('filters');
+    },
+
+    onShow: function() {
+      // Create the form view
+      this.form.show(
+        new Views.FormView({
+          collection: this.collection
+        })
+      );
+      // Create the buttons view
+      this.buttons.show(
+        new Views.ButtonView({
+          collection: this.collection
+        })
+      );
+    },
+
+    submitHandler: function(e) {
+      //console.log("FormView.submitHandler", App);
+      // Let the App handle the submission
+      App.vent.trigger("survey:submit", this.model); 
+    }, 
+
+    resetHandler: function(e) {
+      this.collection.purge();
+    }
+  });
+
+  // The root view of the result route
+  Views.ResultView = Backbone.Marionette.Layout.extend({
+    
+    template: 'layouts/result',
+
+    regions: {
+      wall: '#wall',
+      form: '#form',
+      buttons: '#buttons'
+    },
+
+    events: {
+      // Catch bubbled events from child button view
+      "click input[type=submit]" : "submitHandler",
+      "click input[type=reset]" : "resetHandler"
+    },
+
+    initialize: function() {
+      this.collection = this.model.get('wallModel').get('filters');
+    },
+
+    onShow: function() {
+
+      var wallModel = this.model.get('wallModel');
+      
+      // Create the form view
+      // this.wall.show(
+      //   new Views.CanvasView({
+      //     model: wallModel,
+      //     collection: wallModel.get('items')
+      //   })
+      // );
+      // Create the form view
+      this.form.show(
+        new Views.FormView({
+          collection: this.collection
+        })
+      );
+      // Create the buttons view
+      this.buttons.show(
+        new Views.ButtonView({
+          collection: this.collection
+        })
+      );
+    },
+
+    submitHandler: function() {
+
+    },
+
+    resetHandler: function() {
+
+    }
+  });
+
+  Views.FormView = Backbone.Marionette.CollectionView.extend({ itemView: Views.FormItem });
 
   Views.ButtonView = Backbone.Marionette.ItemView.extend({
 
@@ -195,13 +327,6 @@ function(App, Backbone) {
     $submitButton: null,
     $resetButton: null,
 
-    events: {
-      // Specificity not essential here, but would be if 
-      // further buttons were added.
-      "click input[type=submit]" : "submitClickHandler",
-      "click input[type=reset]" : "resetClickHandler"
-    },
-
     initialize: function(options) {
 
       // Scope on Marionette bindTo seems to be bust in v.1 beta
@@ -209,7 +334,7 @@ function(App, Backbone) {
 
       // Changes to child form elements update the associated model and 
       // the change is picked up here to prompt validation of collection
-      this.collection.on('change:selected', this.validate, this);
+      this.collection.on('change', this.validate, this);
     },
 
     onShow: function() {
@@ -231,17 +356,6 @@ function(App, Backbone) {
         $button.fadeOut('slow');
       }
     },
-
-    // Actually, this button should probably have its own view
-    submitClickHandler: function(e) {
-      // console.log("FormView.submitClickHandler", e);
-      // Let the App handle the submission
-      App.vent.trigger("survey:submit", this.model); 
-    }, 
-
-    resetClickHandler: function(e) {
-      this.collection.purge();
-    }
   });
 
   return Views;

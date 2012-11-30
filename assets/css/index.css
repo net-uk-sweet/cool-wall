@@ -39,6 +39,21 @@
 	margin-right: 50px;
 }
 
+#labels { 
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	border: 1px solid red;
+}
+
+.ui-droppable {
+	position: relative;
+	width: 700px;
+	height: 700px;
+}
+
 #menu { 
 	float: left;
 	width: 100px;
@@ -49,4 +64,29 @@
 	list-style: none;
 	margin: 0;
 	padding: 0;
+}
+
+#labels p { position: relative; text-align: center; font-weight: bold; }
+
+#top { top: -40px;  }
+#bottom { top: 650px; } /* these numbers seem a bit screwy */
+#left { left: -360px; top: 210px; }
+#right { left: 360px; top: 240px; }
+
+.rotate {
+  -webkit-transform: rotate(-90deg);
+  -moz-transform: rotate(-90deg);
+  -ms-transform: rotate(-90deg);
+  -o-transform: rotate(-90deg);
+  transform: rotate(-90deg);
+
+  /* also accepts left, right, top, bottom coordinates; not required, but a good idea for styling */
+  -webkit-transform-origin: 50% 50%;
+  -moz-transform-origin: 50% 50%;
+  -ms-transform-origin: 50% 50%;
+  -o-transform-origin: 50% 50%;
+  transform-origin: 50% 50%;
+
+  /* Should be unset in IE9+ I think. */
+  filter: progid:DXImageTransform.Microsoft.BasicImage(rotation=3);
 }

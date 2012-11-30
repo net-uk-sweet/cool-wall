@@ -26,6 +26,7 @@ app.get('/api', function (req, res) {
 .get('/api/survey/:id', function(req, res) {
 	res.send({ 
 		id: req.params.id, 
+		/* title: "My survey",*/
 		wallId: "54321", 
 		filters: getFilters()
 	});
@@ -40,13 +41,22 @@ app.get('/api', function (req, res) {
 	});
 })
 .get('/api/result/:id', function(req, res) {
-	res.send('No results ');
+	// res.send({
+	// 	id: req.params.id,
+	// 	// For ease here, we return the full items, but in
+	// 	// production we'll only get a list of ids and positions.
+	// 	items: getItems(true)
+	// });
+	//res.send('No results ');
+	res.send(getItems(true));
 })
 .post('/api/result', function(req, res) {
 	var result = {
 		filters: req.body.filters,
 		items: req.body.items
 	};
+	// Actually, we'd want to strip out just the relevant data for storage
+	// Essentially a results and filters list w/ id and value only
 	console.log("Results posted:", result);
 	res.send(result);
 });
@@ -54,7 +64,7 @@ app.get('/api', function (req, res) {
 // Helper methods to create some test data
 function getFilters() {
 	var arr = [];
-	for (var i = 0; i < 5; i ++) {
+	for (var i = 0; i < 4; i ++) {
 		arr.push({
 			id: "fId_" + i,
 			title: "Filter " + i,
@@ -67,7 +77,7 @@ function getFilters() {
 }
 function getOptions(filterId) {
 	var arr = [];
-	for (var i = 0; i < 3; i ++) {
+	for (var i = 0; i < 4; i ++) {
 		arr.push({
 			id: "oId_" + filterId + "_" + i,
 			title: "Option " + i
@@ -75,15 +85,19 @@ function getOptions(filterId) {
 	}
 	return arr;
 }
-function getItems() {
+function getItems(result) {
 	var arr = [];
-	for (var i = 0; i < 5; i ++) {
+	var point;
+	for (var i = 0; i < 4; i ++) {
+		point = result 
+			? { x: Math.round(Math.random() * 700), y: Math.round(Math.random() * 400) }
+			: null;
+
 		arr.push({
 			id: "wId_" + i,
 			title: "Wall item " + i,
 			src: "assets/img/img_" + (i + 1) + ".png",
-			// Makes life easier on the client if point is not initially populated
-			//point: {x: 0, y: 0} 
+			point: point // populated by user
 		});
 	}
 	return arr;

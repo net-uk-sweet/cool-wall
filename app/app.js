@@ -44,6 +44,7 @@ function($, _, Backbone, Marionette) {
     // Call the template function with the data.
     return JST[path](data);
   };
+  
   /* ======================================================================== */
 
   var App = new Backbone.Marionette.Application();
@@ -62,45 +63,25 @@ function($, _, Backbone, Marionette) {
     this.initAppEvents();
   });
 
-
   App.on("initialize:after", function(){
+    // TODO: read up on why I can't use push state
     Backbone.history.start({ /*pushState: true*/ });
   });
 
   // The main initializing function sets up the basic layout and its regions.
   App.initAppLayout = function() {
 
-    // Define the layouts for each route
-    var SurveyLayout = Backbone.Marionette.Layout.extend({
-      template: 'layouts/survey',
+    var MainLayout = Backbone.Marionette.Layout.extend({
+      template: 'layouts/main',
       regions: {
-        form: '#form',
-        buttons: '#buttons'
+        header: '#header',
+        content: '#content',
+        footer: '#footer'
       }
     });
 
-    var WallLayout = Backbone.Marionette.Layout.extend({
-      template: 'layouts/wall',
-      regions: {
-        wall: '#wall',
-        menu: '#menu',
-        buttons: '#buttons'
-      }
-    });
-
-    var ResultLayout = Backbone.Marionette.Layout.extend({
-      template: 'layouts/result',
-      regions: {
-        wall: '#wall',
-        filters: '#filters',
-        buttons: '#buttons'
-      } 
-    });
-
-    // Create and cache instances of the layout for each route
-    App.surveyLayout = new SurveyLayout();
-    App.wallLayout = new WallLayout(); 
-    App.resultLayout = new ResultLayout();
+    // Set the main layout
+    App.main.show(new MainLayout());
   };
   
   App.initAppEvents = function() {
@@ -114,17 +95,26 @@ function($, _, Backbone, Marionette) {
     });
 
     App.vent.on('survey:submit', function(e) {
-      // e is the WallModel instance passed as event object
-      App.ResultModel.set('filters', e.get('filters'));
+      // e is the SurveyModel instance passed as event object
+      // Add the populated filter data to the model and update route
+      App.SaveResultModel.set({ filters: e.get('filters') });
       App.Router.navigate('wall/' + e.get('wallId'), { trigger: true });
     });
 
     App.vent.on('wall:submit', function(e) {
-      App.Router.navigate('result', { trigger: true });
+      // e is the WallModel instance passed as event object
+      // Add the populated item data to the model and save to db
+      App.SaveResultModel.set({ items: e.get('items') })
+        .save(null, {
+          success: function() {
+            // Allow the user to see the results 
+            App.Router.navigate('result/', { trigger: true });
+          }
+        });
     });
 
     App.vent.on('result:submit', function(e) {
-      // Gonna want to load data here
+      // Gonna want to fetch data here
     });
   };
 

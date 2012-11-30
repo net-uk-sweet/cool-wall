@@ -20,7 +20,10 @@ require.config({
     /*touchpunch: "../assets/js/libs/jquery.ui.touch-punch",*/
     lodash: "../assets/js/libs/lodash",
     backbone: "../assets/js/libs/backbone",
-    marionette: "../assets/js/libs/backbone.marionette"
+    marionette: "../assets/js/libs/backbone.marionette",
+
+    // Plugins
+    grid: "../assets/js/plugins/amaze.grid"
   },
 
   shim: {
@@ -36,9 +39,6 @@ require.config({
       deps: ["lodash", "jquery"],
       exports: "Backbone"
     },
-
-    // Backbone.LayoutManager depends on Backbone.
-    "plugins/backbone.layoutmanager": ["backbone"],
 
     // jQuery UI depends on jQuery
     "libs/jquery-ui": ["jquery"]
