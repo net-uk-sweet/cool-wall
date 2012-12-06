@@ -5,7 +5,7 @@ define([
   "backbone",
 
   // Views
-  "modules/result/views",
+  "modules/result/views"
 ],
 
 function(App, Backbone, Views) {
@@ -55,8 +55,7 @@ function(App, Backbone, Views) {
 
     fetchResultList: function() {
 
-      var url = "http://localhost:8000/api/result/" 
-        + this.surveyModel.get('wallId');
+      var url = "http://localhost:8000/api/result/" + this.surveyModel.get('wallId');
       
       this.resultList.url = url;
       this.resultList.fetch({ success: _.bind(this.parseResultList, this) }); 

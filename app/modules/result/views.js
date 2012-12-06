@@ -69,7 +69,7 @@ function(App, Backbone, grid, Survey) {
     },
 
     submitHandler: function() {
-      App.vent.trigger("result:submit", this.model)
+      App.vent.trigger("result:submit", this.model);
     },
 
     resetHandler: function() {
@@ -88,7 +88,7 @@ function(App, Backbone, grid, Survey) {
 
     initialize: function() {
       // console.log("ItemView.initialize");
-      this.model.bind('change:point', this.pointChangeHandler, this)
+      this.model.bind('change:point', this.pointChangeHandler, this);
     },
 
     onShow: function() {  
@@ -197,7 +197,7 @@ function(App, Backbone, grid, Survey) {
       } else {
         $button.fadeOut('slow');
       }
-    },
+    }
   });
 
   return Views;

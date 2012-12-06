@@ -77,7 +77,7 @@ function(App, Backbone, Views) {
 
     purge: function() {
       // Reset all selected states
-      this.map(function(m) { m.set({ point: null }) });
+      this.map(function(m) { m.set({ point: null }); });
     } 
   });
 

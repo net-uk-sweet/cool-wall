@@ -154,7 +154,7 @@ function(App, Backbone, grid) {
 
     initialize: function() {
       // console.log("ItemView.initialize");
-      this.model.bind('change:point', this.pointChangeHandler, this)
+      this.model.bind('change:point', this.pointChangeHandler, this);
     },
 
     onRender: function() {  
@@ -187,7 +187,7 @@ function(App, Backbone, grid) {
     // May want a template when / if we add controls for the menu.
     // Presently, we're just injecting a bunch of items into a list 
     tagName: "ul",
-    itemView: Views.WallItem,
+    itemView: Views.WallItem
   });
 
   Views.ButtonView = Backbone.Marionette.ItemView.extend({
@@ -225,7 +225,7 @@ function(App, Backbone, grid) {
       } else {
         $button.fadeOut('slow');
       }
-    },
+    }
   });
 
   return Views;

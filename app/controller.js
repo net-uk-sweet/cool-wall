@@ -38,7 +38,7 @@ function(Backbone, Marionette, App, Survey, Wall, Result) {
 
 		handleSurveyRoute: function(id) {
 
-			console.log("Controller.handleSurveyRoute:", id, Survey /*, App*/);
+			// console.log("Controller.handleSurveyRoute:", id, Survey /*, App*/);
 
 			// Create and cache an instance of ResultModel to hold our results
 			// Populate it with the id of the survey it relates to

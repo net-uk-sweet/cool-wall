@@ -68,8 +68,8 @@ function(App, Backbone, Views) {
 
     selected: function() {
       //var selected = _.filter(this.models, function(m) { return m.get('selected') !== 0; });
-      var selectFilter = function(m) { return m.has('selected') };
-      var getSelected = function(m) { return m.get('selected') }
+      var selectFilter = function(m) { return m.has('selected'); };
+      var getSelected = function(m) { return m.get('selected'); };
       
       return this.filter(selectFilter).map(getSelected);
     },
@@ -84,7 +84,7 @@ function(App, Backbone, Views) {
     // share the button code which calls it, so a generic name is more suitable 
     purge: function() {
       // Reset all selected states
-      this.map(function(m) { m.set({ selected: null }) });
+      this.map(function(m) { m.set({ selected: null }); });
     }
   });
 

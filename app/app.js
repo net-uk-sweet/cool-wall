@@ -7,10 +7,10 @@ define([
   'marionette'
 ], 
 
+/*jslint browser: true*/
+
 function($, _, Backbone, Marionette) {
   
-  "use strict";
-
   /* =========================================================================
    * The following will make Marionette's template retrieval work with
    * in both development (templates found in html files) and production
@@ -46,7 +46,7 @@ function($, _, Backbone, Marionette) {
   };
   
   /* ======================================================================== */
-  console.log("App");
+
   var App = new Backbone.Marionette.Application();
   
   // Set up basic paths.
@@ -119,11 +119,11 @@ function($, _, Backbone, Marionette) {
       var resultList = e.get('resultList');
 
       // This will form the url for our REST call to api/result
-      console.log("App.vent.on('result:submit:')", surveyModel.get('filters').selected());
+      // console.log("App.vent.on('result:submit:')", surveyModel.get('filters').selected());
 
       resultList.fetch({
         success: function() {
-          console.log("App.vent.on('result:submit'): fetched results");
+          // console.log("App.vent.on('result:submit'): fetched results");
         }
       });
     });

@@ -145,7 +145,7 @@ function (App, Backbone) {
       } else {
         $button.fadeOut('slow');
       }
-    },
+    }
   });
 
   return Views;

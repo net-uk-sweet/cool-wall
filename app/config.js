@@ -1,6 +1,7 @@
-// Use ECMAScript 5 Strict Mode. Why? John Resig says we should:
-// http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
-"use strict";
+// Moved this to main.js as instructed here: 
+// http://www.yuiblog.com/blog/2010/12/14/strict-mode-is-coming-to-town/
+
+//"use strict";
 
 // Set the require.js configuration for your application.
 require.config({
