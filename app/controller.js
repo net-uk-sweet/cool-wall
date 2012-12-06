@@ -4,28 +4,29 @@ define([
 	'app',
 
 	// Modules
-	'modules/wall' 
+	'modules/survey',
+	'modules/wall',
+	'modules/result' 
 ], 
 
-// Wall module should probably have its own router and controller 
-// to be considered truly modular but global routing works for now. 
-function(Backbone, Marionette, App, WallModule) { 
+// Import our three modules.
+function(Backbone, Marionette, App, Survey, Wall, Result) { 
 
 	function renderSurvey() {
 		App.main.currentView.content.show(
-			new WallModule.Views.SurveyView({ model: this })
+			new Survey.Views.RootView({ model: this })
 		);
 	}
 
 	function renderWall() {
 		App.main.currentView.content.show(
-			new WallModule.Views.WallView({ model: this })
+			new Wall.Views.RootView({ model: this })
 		);
 	}
 
 	function renderResult() {
 		App.main.currentView.content.show(
-			new WallModule.Views.ResultView({ model: this })
+			new Result.Views.RootView({ model: this })
 		);
 	}
 
@@ -37,15 +38,15 @@ function(Backbone, Marionette, App, WallModule) {
 
 		handleSurveyRoute: function(id) {
 
-			console.log("Controller.handleSurveyRoute:", id/*, WallModule, App*/);
+			console.log("Controller.handleSurveyRoute:", id, Survey /*, App*/);
 
 			// Create and cache an instance of ResultModel to hold our results
 			// Populate it with the id of the survey it relates to
-			App.SaveResultModel = new WallModule.SaveResultModel({ surveyId: id });
+			App.Result = new Survey.Result({ surveyId: id });
 
 			// We fetch the model first and only create the view when the 
 			// data is returned and the success callback has been executed. 
-			var surveyModel = new WallModule.SurveyModel({ id: id });
+			var surveyModel = new Survey.Model({ id: id });
 			surveyModel.fetch({
 				success: _.bind(renderSurvey, surveyModel),
 				error: _.bind(throwError, new Error("Failed to load SurveyModel"))
@@ -54,27 +55,33 @@ function(Backbone, Marionette, App, WallModule) {
 
 		handleWallRoute: function(id) {
 
-			console.log("Controller.handleWallRoute:", id/*, WallModule*/);
+			//console.log("Controller.handleWallRoute:", id/*, WallModule*/);
 
 			// We fetch the model first and only create the view when the 
 			// data is returned and the success callback has been executed. 
-			var wallModel = new WallModule.WallModel({ id: id });
+			var wallModel = new Wall.Model({ id: id });
 			wallModel.fetch({ 
 				success: _.bind(renderWall, wallModel), 
 				error: _.bind(throwError, new Error("Failed to load WallModel"))
 			});
 		},
 
-		// could probably send user to results on completion
-		// maybe with a count of respondents 
+		// Could probably send user to results on completion, maybe with a count of respondents 
 		handleResultRoute: function(id) {
 
-			console.log("Controller.handleResultRoute:", id/*, WallModule */);
+			//console.log("Controller.handleResultRoute:", id/*, WallModule */);
 
-			var resultModel = new WallModule.ResultModel({ id: id })
+			// This is a special franken-model
+			var resultModel = new Result.Model({ 
+				id: id,
+				surveyModel: new Survey.Model(),
+				wallModel: new Wall.Model(),
+				resultList: new Result.List({ model: Wall.Item }) 
+			});
+
 			resultModel.fetch({
 				success: _.bind(renderResult, resultModel), 
-				error: _.bind(throwError, new Error("Failed to load ResultModel"))					
+				error: _.bind(throwError, new Error("Failed to load ResultModel")) // this ain't implemented				
 			});
 		}
 	};

@@ -46,7 +46,7 @@ function($, _, Backbone, Marionette) {
   };
   
   /* ======================================================================== */
-
+  console.log("App");
   var App = new Backbone.Marionette.Application();
   
   // Set up basic paths.
@@ -97,24 +97,35 @@ function($, _, Backbone, Marionette) {
     App.vent.on('survey:submit', function(e) {
       // e is the SurveyModel instance passed as event object
       // Add the populated filter data to the model and update route
-      App.SaveResultModel.set({ filters: e.get('filters') });
+      App.Result.set({ filters: e.get('filters') });
       App.Router.navigate('wall/' + e.get('wallId'), { trigger: true });
     });
 
     App.vent.on('wall:submit', function(e) {
       // e is the WallModel instance passed as event object
       // Add the populated item data to the model and save to db
-      App.SaveResultModel.set({ items: e.get('items') })
+      App.Result.set({ items: e.get('items') })
         .save(null, {
           success: function() {
             // Allow the user to see the results 
-            App.Router.navigate('result/', { trigger: true });
+            App.Router.navigate('result/' + App.Result.get('surveyId'), { trigger: true });
           }
         });
     });
 
     App.vent.on('result:submit', function(e) {
-      // Gonna want to fetch data here
+      // e is the ResultModel instance 
+      var surveyModel = e.get('surveyModel');
+      var resultList = e.get('resultList');
+
+      // This will form the url for our REST call to api/result
+      console.log("App.vent.on('result:submit:')", surveyModel.get('filters').selected());
+
+      resultList.fetch({
+        success: function() {
+          console.log("App.vent.on('result:submit'): fetched results");
+        }
+      });
     });
   };
 

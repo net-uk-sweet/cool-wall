@@ -3,6 +3,8 @@ define([
 
   // Libs
   "backbone",
+
+  // Plugins
   "grid",
   "jqueryui" // augments jquery so no need to reference directly
 ],
@@ -13,8 +15,9 @@ function(App, Backbone, grid) {
 
   // -----------------------------------------------------
   // The root view of the wall route
+  // -----------------------------------------------------
 
-  Views.WallView = Backbone.Marionette.Layout.extend({ 
+  Views.RootView = Backbone.Marionette.Layout.extend({ 
 
     template: 'layouts/wall',
     
@@ -37,7 +40,7 @@ function(App, Backbone, grid) {
     onShow: function() {
       // Create the form view
       this.wall.show(
-        new Views.InteractiveCanvasView({
+        new Views.CanvasView({
           model: this.model,
           collection: this.collection
         })
@@ -68,7 +71,13 @@ function(App, Backbone, grid) {
     }
   });
 
-  Views.InteractiveCanvasView = Backbone.Marionette.ItemView.extend({
+  // -----------------------------------------------------
+  // The drag target where all the action happens (droppable)
+  // -----------------------------------------------------
+
+  Views.CanvasView = Backbone.Marionette.ItemView.extend({
+
+    className: "target",
 
     template: "wall/wallView",
 
@@ -103,9 +112,12 @@ function(App, Backbone, grid) {
       // console.log("WallView.dropHandler: ", model);
 
       // Update the model with the droppable item's position
+      // relative to the canvas (droppable) element
+      var offset = this.$el.offset();
+
       model.set('point', {
-        left: ui.offset.left, 
-        top: ui.offset.top
+        left: ui.offset.left - offset.left, 
+        top: ui.offset.top - offset.top
       });
     },
 
@@ -132,10 +144,10 @@ function(App, Backbone, grid) {
   });
 
   // -----------------------------------------------------
-  // Item menu views
+  // Menu item (draggable) 
   // -----------------------------------------------------
 
-  Views.ItemView = Backbone.Marionette.ItemView.extend({
+  Views.WallItem = Backbone.Marionette.ItemView.extend({
 
     tagName: "li",
     template: "wall/itemView",
@@ -146,6 +158,7 @@ function(App, Backbone, grid) {
     },
 
     onRender: function() {  
+
       this.model.set({ start: this.$el.position() }, { silent: true });
 
       this.$el.draggable({ 
@@ -160,11 +173,11 @@ function(App, Backbone, grid) {
     pointChangeHandler: function() {
       // console.log("ItemView.pointChangeHandler:", this.model.get('point'));
       // If the point has been reset we reset the element
-      if (this.model.get('point') === null) {
+      if (!this.model.has('point')) {
         var start = this.model.get('start');
         // console.log("ItemView.pointChangeHandler:", start);
         this.$el.css({ top: start.top, left: start.left });
-      }
+      } 
     }
   });
 
@@ -174,151 +187,8 @@ function(App, Backbone, grid) {
     // May want a template when / if we add controls for the menu.
     // Presently, we're just injecting a bunch of items into a list 
     tagName: "ul",
-    itemView: Views.ItemView,
+    itemView: Views.WallItem,
   });
-
-  // -----------------------------------------------------
-  // Survey (form) views
-  // -----------------------------------------------------
-
-  Views.FormItem = Backbone.Marionette.ItemView.extend({
-
-    tagName: "fieldset",
-
-    events: {
-      "change select": "elementSelectHandler"
-    },
-
-    initialize: function() {
-      // Again.. Marionette scope seems to be broken on bindTo
-      //this.bindTo(this.model, 'change:selected', this.modelSelectHandler)
-      this.model.bind('change:selected', this.modelSelectHandler, this);
-    },
-
-    // Choose template according to filter type.
-    // In reality, they're all select types for now
-    getTemplate: function(){
-      return "wall/formElements/" + this.model.get('type');
-    },
-
-    elementSelectHandler: function(e) {
-      // console.log("FilterItem.selected:", e, this);
-      this.model.set('selected', $(e.currentTarget).val());
-    }, 
-
-    modelSelectHandler: function(e) {
-      // Feels a bit ugly this, but we don't want to react to changes
-      // to the model invoked by a change on the view's element. Here
-      // we're interested in a change to the collection prompted by 
-      // a purge. 
-      if (this.model.get('selected') === 0) {
-        $('select', this.$el).prop('selectedIndex', 0); 
-      }
-    }
-  });
-
-  // The root view of the survey route
-  Views.SurveyView = Backbone.Marionette.Layout.extend({ 
-
-    template: 'layouts/survey',
-    
-    regions: {
-      form: '#form',
-      buttons: '#buttons'
-    },
-
-    events: {
-      // Catch bubbled events from child button view
-      "click input[type=submit]" : "submitHandler",
-      "click input[type=reset]" : "resetHandler"
-    },
-
-    initialize: function() {
-      this.collection = this.model.get('filters');
-    },
-
-    onShow: function() {
-      // Create the form view
-      this.form.show(
-        new Views.FormView({
-          collection: this.collection
-        })
-      );
-      // Create the buttons view
-      this.buttons.show(
-        new Views.ButtonView({
-          collection: this.collection
-        })
-      );
-    },
-
-    submitHandler: function(e) {
-      //console.log("FormView.submitHandler", App);
-      // Let the App handle the submission
-      App.vent.trigger("survey:submit", this.model); 
-    }, 
-
-    resetHandler: function(e) {
-      this.collection.purge();
-    }
-  });
-
-  // The root view of the result route
-  Views.ResultView = Backbone.Marionette.Layout.extend({
-    
-    template: 'layouts/result',
-
-    regions: {
-      wall: '#wall',
-      form: '#form',
-      buttons: '#buttons'
-    },
-
-    events: {
-      // Catch bubbled events from child button view
-      "click input[type=submit]" : "submitHandler",
-      "click input[type=reset]" : "resetHandler"
-    },
-
-    initialize: function() {
-      this.collection = this.model.get('wallModel').get('filters');
-    },
-
-    onShow: function() {
-
-      var wallModel = this.model.get('wallModel');
-      
-      // Create the form view
-      // this.wall.show(
-      //   new Views.CanvasView({
-      //     model: wallModel,
-      //     collection: wallModel.get('items')
-      //   })
-      // );
-      // Create the form view
-      this.form.show(
-        new Views.FormView({
-          collection: this.collection
-        })
-      );
-      // Create the buttons view
-      this.buttons.show(
-        new Views.ButtonView({
-          collection: this.collection
-        })
-      );
-    },
-
-    submitHandler: function() {
-
-    },
-
-    resetHandler: function() {
-
-    }
-  });
-
-  Views.FormView = Backbone.Marionette.CollectionView.extend({ itemView: Views.FormItem });
 
   Views.ButtonView = Backbone.Marionette.ItemView.extend({
 

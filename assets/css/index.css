@@ -18,8 +18,6 @@
 
 .ui-draggable {}
 .ui-draggable-dragging {}
-
-.ui-droppable { width: 100%; height: 100%; }
 .ui-state-active { background-color: #cccccc; }
 
 
@@ -39,7 +37,7 @@
 	margin-right: 50px;
 }
 
-#labels { 
+#labels, #items { 
 	position: absolute;
 	top: 0;
 	left: 0;
@@ -48,7 +46,9 @@
 	border: 1px solid red;
 }
 
-.ui-droppable {
+#items div { position: absolute; }
+
+.target {
 	position: relative;
 	width: 700px;
 	height: 700px;

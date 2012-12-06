@@ -19,6 +19,10 @@ app.configure(function () {
 	app.use(express.errorHandler({ dumpExceptions: true, showStack: true }));
 });
 
+
+// Not v. RESTful, but it's just to test
+app.result = null;
+
 // Stub REST services
 app.get('/api', function (req, res) {
 	res.send('cool-wall RESTful API is running');
@@ -48,17 +52,20 @@ app.get('/api', function (req, res) {
 	// 	items: getItems(true)
 	// });
 	//res.send('No results ');
-	res.send(getItems(true));
+	//res.send(getItems(true));
+
+	// Return the results that we were given
+	res.send(app.result.items);
 })
 .post('/api/result', function(req, res) {
-	var result = {
+	app.result = {
 		filters: req.body.filters,
 		items: req.body.items
 	};
 	// Actually, we'd want to strip out just the relevant data for storage
 	// Essentially a results and filters list w/ id and value only
-	console.log("Results posted:", result);
-	res.send(result);
+	console.log("Results posted:", app.result);
+	res.send(app.result);
 });
 
 // Helper methods to create some test data
@@ -69,7 +76,7 @@ function getFilters() {
 			id: "fId_" + i,
 			title: "Filter " + i,
 			type: "select", // probably only ever need this type
-			selected: 0,
+			selected: null,
 			options: getOptions(i)
 		});
 	}
@@ -90,7 +97,7 @@ function getItems(result) {
 	var point;
 	for (var i = 0; i < 4; i ++) {
 		point = result 
-			? { x: Math.round(Math.random() * 700), y: Math.round(Math.random() * 400) }
+			? { left: Math.round(Math.random() * 700), top: Math.round(Math.random() * 400) }
 			: null;
 
 		arr.push({
