@@ -12,12 +12,13 @@ define([
 // Import our three modules.
 function(Backbone, Marionette, App, Survey, Wall, Result) { 
 
+	// http://localhost:8000/#survey/1
 	function renderSurvey() {
 		App.main.currentView.content.show(
 			new Survey.Views.RootView({ model: this })
 		);
 	}
-
+	// http://localhost:8000/#wall/54321
 	function renderWall() {
 		App.main.currentView.content.show(
 			new Wall.Views.RootView({ model: this })
